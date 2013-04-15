@@ -13,3 +13,4 @@ worker.onmessage = function(event) {
   console.log("Worker said : " + event.data);
 };
 worker.postMessage('ali');
+worker.postMessage('heyooooo');
