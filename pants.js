@@ -1,16 +1,8 @@
+// Imports.
 var Worker = require('webworker-threads').Worker;
-// var w = new Worker('worker.js'); // Standard API
+var argv = require('optimist')
+    .usage("Detects possible threats in genetic test data.\nUsage: $0")
+    .default('cores', 4)
+    .describe('cores', 'Sets the number of threads to use.')
+    .argv;
 
- // You may also pass in a function:
- var worker = new Worker(function(){
-   postMessage("I'm working before postMessage('ali').");
-     onmessage = function(event) {
-         postMessage('Hi ' + event.data);
-             self.close();
-         };
-});
-worker.onmessage = function(event) {
-  console.log("Worker said : " + event.data);
-};
-worker.postMessage('ali');
-worker.postMessage('heyooooo');

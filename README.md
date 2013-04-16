@@ -1,4 +1,4 @@
-parallel-project
+PANTS
 ================
 
-A parallelized genetic anomaly detection algorithm written with NodeJS
+Parallel Anomaly Nonlinear Tracking System
