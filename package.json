@@ -16,6 +16,8 @@
   "gitHead": "9a46224630ab4834d646bc88fc7c0c9af9088737",
   "dependencies": {
     "webworker-threads": "~0.4.7",
-    "optimist": "~0.4.0"
+    "optimist": "~0.4.0",
+    "winston": "~0.7.1",
+    "colors": "~0.6.0-1"
   }
 }
