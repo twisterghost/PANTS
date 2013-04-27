@@ -13,9 +13,13 @@ var colors = require('colors');
 // Define variables.
 var averageTumor = [];
 var averageHealthy = [];
+var deltaTumor = [];
+var deltaHealthy = [];
+var testAnswers = [];
 var tumorCount = 0;
 var healthyCount = 0;
-var testPatientData ;
+var trainPatientData ;
+var testPatientData;
 
 // Initialize arrays to 0.
 for (var i = 0; i < 12600; i++) {
@@ -23,32 +27,96 @@ for (var i = 0; i < 12600; i++) {
   averageHealthy[i] = 0;
 }
 
-console.log("Welcome to PANTS\nParallel Anomoly Nonlinear Tracking System".bold);
+console.log("Welcome to PANTS\nParallel Anomaly Nonlinear Tracking System".bold);
 console.log("(c) Laura Anzaldi & Michael Barrett 2013\n");
 
-console.log("Loading test patient data...".cyan);
+console.log("Loading patient data...".cyan);
 
-// Load test pateint data into variable.
-testPatientData = fs.readFileSync("trainData");
+// Load train patient data into variable. (renamed 'trainPatientData')
+trainPatientData = fs.readFileSync("trainData");
 
-// Split test pateint data into an array by patient.
-console.log("Parsing loaded data...".cyan);
+// Split train patient data into an array by patient.
+console.log("Parsing loaded train data...".cyan);
+trainPatientData = trainPatientData.toString().split("\n");
+
+// Load test patient data into variable.)
+testPatientData = fs.readFileSync("testData");
+
+// Split train patient data into an array by patient.
+console.log("Parsing loaded test data...".cyan);
 testPatientData = testPatientData.toString().split("\n");
+  
 
 // Linear option.
 if (argv.l) {
-  console.log("Using linear averaging algorithm...".yellow);
-  linearAverage();
-  console.log("Linear averaging complete.".yellow);
+    console.log("Using linear averaging algorithm...".yellow);
+    linearAverage();
+    console.log("Linear averaging complete.".yellow);
+    console.log("Now examining test data...".yellow);
+    linearDelta();
+    console.log("Delta computation complete.".yellow);
+    
+    var tumorRight = 0;
+    var healthyRight = 0;
+    var tumorWrong = 0;
+    var healthyWrong = 0;
+
+    // accuracy computations...maybe should go in another function?
+    for (var i = 0; i < testPatientData.length; i++) {
+	answer = testAnswers[i];
+	prediction = (deltaTumor[i] > deltaHealthy[i]) ? "Normal" : "Tumor";
+	console.log("Patient " + i + ": predicted: " + prediction + ", actually " + answer);
+	
+	if(answer == "Tumor" && prediction == "Tumor"){
+	    tumorRight += 1;
+	}
+	else{
+	    tumorWrong += 1;
+	}
+	
+	if(answer == "Normal" && prediction == "Normal") {
+	    healthyRight += 1;
+	}
+	else {
+	    healthyWrong += 1;
+	}
+    }
+
+    var perTumorRight = 100 * (tumorRight / (tumorRight + tumorWrong));
+    var perHealthyRight = 100 * (healthyRight / (healthyRight + healthyWrong));
+    var perTotalRight = 100* ((tumorRight + healthyRight) / testPatientData.length);
+    
+    console.log("Correctly predicted " + parseInt(perTumorRight) + "% of tumor samples");
+    console.log("Correctly predicted " + parseInt(perHealthyRight) + "% of normal samples");
+    console.log("Overall accuracy: " + parseInt(perTotalRight) + "%");		
 }
+
+
+// Linear delta function for use with -l argument.
+// assumes testPatientData has already been populated
+function linearDelta()
+{
+    for (var i = 0; i < testPatientData.length; i++) {
+	var patient = testPatientData[i].split(",");
+	testAnswers[i] = patient[12600];
+	deltaTumor[i] = 0;
+	deltaHealthy[i] = 0;
+
+	for(var j = 0; j < patient.length - 1; j++) {
+	    deltaTumor[i] += Math.abs(averageTumor[j] - parseInt(patient[j]));
+	    deltaHealthy[i] += Math.abs(averageHealthy[j] - parseInt(patient[j]));
+	}
+
+    }
+};
 
 // Linear averaging function for use with the -l argument.
 function linearAverage() {
   
   // Loop through every train data patient, load into either array.
-  for (var i = 0; i < testPatientData.length; i++) {
+  for (var i = 0; i < trainPatientData.length; i++) {
     
-    var patient = testPatientData[i].split(",");
+    var patient = trainPatientData[i].split(",");
     
     if (patient[12600] == "Tumor") {
             
@@ -61,7 +129,7 @@ function linearAverage() {
       tumorCount++;
     } else {
       
-      // Add this data to the tumor array.
+      // Add this data to the healthy array.
       for (var j = 0; j < patient.length - 1; j++) {
         averageHealthy[j] += parseInt(patient[j]);
       }
@@ -79,5 +147,5 @@ function linearAverage() {
     averageTumor[i] /= tumorCount;
     averageHealthy[i] /= healthyCount;
   }
-  
+
 }
