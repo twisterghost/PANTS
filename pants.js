@@ -67,18 +67,23 @@ if (argv.l) {
 	prediction = (deltaTumor[i] > deltaHealthy[i]) ? "Normal" : "Tumor";
 	console.log("Patient " + i + ": predicted: " + prediction + ", actually " + answer);
 	
-	if(answer == "Tumor" && prediction == "Tumor"){
-	    tumorRight += 1;
+	if(answer == "Tumor") {
+	    if (prediction == "Tumor"){
+		tumorRight += 1;
+	    }
+	    else {
+		tumorWrong += 1;
+	    }
 	}
-	else{
-	    tumorWrong += 1;
-	}
+	else
+	{
 	
-	if(answer == "Normal" && prediction == "Normal") {
-	    healthyRight += 1;
-	}
-	else {
-	    healthyWrong += 1;
+	    if(prediction == "Normal") {
+		healthyRight += 1;
+	    }
+	    else {
+		healthyWrong += 1;
+	    }
 	}
     }
 
