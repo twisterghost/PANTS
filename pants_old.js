@@ -34,19 +34,19 @@ console.log("(c) Laura Anzaldi & Michael Barrett 2013\n");
 console.log("Loading patient data...".cyan);
 
 // Load train patient data into variable. (renamed 'trainPatientData')
-trainPatientData = fs.readFileSync("testData");
+trainPatientData = fs.readFileSync("trainData");
 
 // Split train patient data into an array by patient.
 console.log("Parsing loaded train data...".cyan);
 trainPatientData = trainPatientData.toString().split("\n");
 
 // Load test patient data into variable.)
-testPatientData = fs.readFileSync("trainData");
+testPatientData = fs.readFileSync("testData");
 
 // Split train patient data into an array by patient.
 console.log("Parsing loaded test data...".cyan);
 testPatientData = testPatientData.toString().split("\n");
-  
+
 
 // Linear option.
 if (argv.l) {
@@ -56,7 +56,7 @@ if (argv.l) {
   console.log("Now examining test data...".yellow);
   linearCompare();
   console.log("Delta computation complete.".yellow);
-  
+
   var tumorRight = 0;
   var healthyRight = 0;
   var tumorWrong = 0;
@@ -67,7 +67,7 @@ if (argv.l) {
     answer = testAnswers[i];
     prediction = guessAnswer[i];
     console.log("Patient " + i + ": predicted: " + prediction + ", actually " + answer);
-  
+
     if(answer == "Tumor") {
       if (prediction == "Tumor"){
         tumorRight += 1;
@@ -87,10 +87,10 @@ if (argv.l) {
   var perTumorRight = 100 * (tumorRight / (tumorRight + tumorWrong));
   var perHealthyRight = 100 * (healthyRight / (healthyRight + healthyWrong));
   var perTotalRight = 100* ((tumorRight + healthyRight) / testPatientData.length);
-  
+
   console.log("Correctly predicted " + parseInt(perTumorRight) + "% of tumor samples");
   console.log("Correctly predicted " + parseInt(perHealthyRight) + "% of normal samples");
-  console.log("Overall accuracy: " + parseInt(perTotalRight) + "%");    
+  console.log("Overall accuracy: " + parseInt(perTotalRight) + "%");
 }
 
 function linearCompare() {
@@ -103,12 +103,12 @@ function linearCompare() {
     for (var j = 0; j < trainPatientData.length; j++) {
       var compareTo = trainPatientData[j].split(",");
       var delta = 0;
-      
+
       // Get the delta.
       for (var k = 0; k < compareTo.length - 1; k++) {
         delta += Math.abs(compareTo[k] - patient[k]);
       }
-      
+
       if (delta < lowestDelta) {
         lowestDelta = delta;
         lowestDeltaIndex = j;
@@ -129,7 +129,7 @@ function linearDelta() {
     testAnswers[i] = patient[12600];
     deltaTumor[i] = 0;
     deltaHealthy[i] = 0;
-  
+
     for(var j = 0; j < patient.length - 1; j++) {
       deltaTumor[i] += Math.abs(averageTumor[j] - parseInt(patient[j]));
       deltaHealthy[i] += Math.abs(averageHealthy[j] - parseInt(patient[j]));
@@ -140,36 +140,36 @@ function linearDelta() {
 
 // Linear averaging function for use with the -l argument.
 function linearAverage() {
-  
+
   // Loop through every train data patient, load into either array.
   for (var i = 0; i < trainPatientData.length; i++) {
-    
+
     var patient = trainPatientData[i].split(",");
-    
+
     if (patient[12600] == "Tumor") {
-            
+
       // Add this data to the tumor array.
       for (var j = 0; j < patient.length - 1; j++) {
         averageTumor[j] += parseInt(patient[j]);
       }
-      
+
       // Increase counter for tumors.
       tumorCount++;
     } else {
-      
+
       // Add this data to the healthy array.
       for (var j = 0; j < patient.length - 1; j++) {
         averageHealthy[j] += parseInt(patient[j]);
       }
-      
+
       // Increase counter for healthy.
       healthyCount++;
     }
   }
-  
+
   var result = "Found " + tumorCount + " tumor patients and " + healthyCount + " healthy patients.";
   console.log(result.cyan);
-  
+
   // Finally, average both arrays.
   for (var i = 0; i < averageTumor.length; i++) {
     averageTumor[i] /= tumorCount;
