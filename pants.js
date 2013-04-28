@@ -49,71 +49,66 @@ testPatientData = testPatientData.toString().split("\n");
 
 // Linear option.
 if (argv.l) {
-    console.log("Using linear averaging algorithm...".yellow);
-    linearAverage();
-    console.log("Linear averaging complete.".yellow);
-    console.log("Now examining test data...".yellow);
-    linearDelta();
-    console.log("Delta computation complete.".yellow);
-    
-    var tumorRight = 0;
-    var healthyRight = 0;
-    var tumorWrong = 0;
-    var healthyWrong = 0;
+  console.log("Using linear averaging algorithm...".yellow);
+  linearAverage();
+  console.log("Linear averaging complete.".yellow);
+  console.log("Now examining test data...".yellow);
+  linearDelta();
+  console.log("Delta computation complete.".yellow);
+  
+  var tumorRight = 0;
+  var healthyRight = 0;
+  var tumorWrong = 0;
+  var healthyWrong = 0;
 
-    // accuracy computations...maybe should go in another function?
-    for (var i = 0; i < testPatientData.length; i++) {
-	answer = testAnswers[i];
-	prediction = (deltaTumor[i] > deltaHealthy[i]) ? "Normal" : "Tumor";
-	console.log("Patient " + i + ": predicted: " + prediction + ", actually " + answer);
-	
-	if(answer == "Tumor") {
-	    if (prediction == "Tumor"){
-		tumorRight += 1;
-	    }
-	    else {
-		tumorWrong += 1;
-	    }
-	}
-	else
-	{
-	
-	    if(prediction == "Normal") {
-		healthyRight += 1;
-	    }
-	    else {
-		healthyWrong += 1;
-	    }
-	}
+  // accuracy computations...maybe should go in another function?
+  for (var i = 0; i < testPatientData.length; i++) {
+    answer = testAnswers[i];
+    prediction = (deltaTumor[i] > deltaHealthy[i]) ? "Normal" : "Tumor";
+    console.log("Patient " + i + ": predicted: " + prediction + ", actually " + answer);
+  
+    if(answer == "Tumor") {
+      if (prediction == "Tumor"){
+        tumorRight += 1;
+      }
+      else {
+        tumorWrong += 1;
+      }
+    } else {
+      if (prediction == "Normal") {
+        healthyRight += 1;
+      } else {
+        healthyWrong += 1;
+      }
     }
+  }
 
-    var perTumorRight = 100 * (tumorRight / (tumorRight + tumorWrong));
-    var perHealthyRight = 100 * (healthyRight / (healthyRight + healthyWrong));
-    var perTotalRight = 100* ((tumorRight + healthyRight) / testPatientData.length);
-    
-    console.log("Correctly predicted " + parseInt(perTumorRight) + "% of tumor samples");
-    console.log("Correctly predicted " + parseInt(perHealthyRight) + "% of normal samples");
-    console.log("Overall accuracy: " + parseInt(perTotalRight) + "%");		
+  var perTumorRight = 100 * (tumorRight / (tumorRight + tumorWrong));
+  var perHealthyRight = 100 * (healthyRight / (healthyRight + healthyWrong));
+  var perTotalRight = 100* ((tumorRight + healthyRight) / testPatientData.length);
+  
+  console.log("Correctly predicted " + parseInt(perTumorRight) + "% of tumor samples");
+  console.log("Correctly predicted " + parseInt(perHealthyRight) + "% of normal samples");
+  console.log("Overall accuracy: " + parseInt(perTotalRight) + "%");    
 }
 
 
 // Linear delta function for use with -l argument.
 // assumes testPatientData has already been populated
-function linearDelta()
-{
-    for (var i = 0; i < testPatientData.length; i++) {
-	var patient = testPatientData[i].split(",");
-	testAnswers[i] = patient[12600];
-	deltaTumor[i] = 0;
-	deltaHealthy[i] = 0;
-
-	for(var j = 0; j < patient.length - 1; j++) {
-	    deltaTumor[i] += Math.abs(averageTumor[j] - parseInt(patient[j]));
-	    deltaHealthy[i] += Math.abs(averageHealthy[j] - parseInt(patient[j]));
-	}
-
+function linearDelta() {
+  for (var i = 0; i < testPatientData.length; i++) {
+    var patient = testPatientData[i].split(",");
+    testAnswers[i] = patient[12600];
+    deltaTumor[i] = 0;
+    deltaHealthy[i] = 0;
+  
+    for(var j = 0; j < patient.length - 1; j++) {
+      deltaTumor[i] += Math.abs(averageTumor[j] - parseInt(patient[j]));
+      deltaHealthy[i] += Math.abs(averageHealthy[j] - parseInt(patient[j]));
     }
-};
+
+  }
+}
 
 // Linear averaging function for use with the -l argument.
 function linearAverage() {
