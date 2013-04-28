@@ -143,6 +143,7 @@ function linearTest() {
 }
 
 
+// Run the linear test if -l is specified.
 if (argv.l) {
   linearTest();
 }
