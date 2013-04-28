@@ -20,6 +20,7 @@ var tumorCount = 0;
 var healthyCount = 0;
 var trainPatientData ;
 var testPatientData;
+var guessAnswer = [];
 
 // Initialize arrays to 0.
 for (var i = 0; i < 12600; i++) {
@@ -53,7 +54,7 @@ if (argv.l) {
   linearAverage();
   console.log("Linear averaging complete.".yellow);
   console.log("Now examining test data...".yellow);
-  linearDelta();
+  linearCompare();
   console.log("Delta computation complete.".yellow);
   
   var tumorRight = 0;
@@ -64,7 +65,7 @@ if (argv.l) {
   // accuracy computations...maybe should go in another function?
   for (var i = 0; i < testPatientData.length; i++) {
     answer = testAnswers[i];
-    prediction = (deltaTumor[i] > deltaHealthy[i]) ? "Normal" : "Tumor";
+    prediction = guessAnswer[i];
     console.log("Patient " + i + ": predicted: " + prediction + ", actually " + answer);
   
     if(answer == "Tumor") {
@@ -90,6 +91,35 @@ if (argv.l) {
   console.log("Correctly predicted " + parseInt(perTumorRight) + "% of tumor samples");
   console.log("Correctly predicted " + parseInt(perHealthyRight) + "% of normal samples");
   console.log("Overall accuracy: " + parseInt(perTotalRight) + "%");    
+}
+
+function linearCompare() {
+  
+
+  for (var i = 0; i < testPatientData.length; i++) {
+    var patient = testPatientData[i].split(",");
+    testAnswers[i] = patient[12600];
+    var lowestDelta = 10000000;
+    var lowestDeltaIndex = -1;
+
+    for (var j = 0; j < trainPatientData.length; j++) {
+      var compareTo = trainPatientData[j].split(",");
+      var delta = 0;
+      
+      // Get the delta.
+      for (var k = 0; k < compareTo.length - 1; k++) {
+        delta += Math.abs(compareTo[k] - patient[k]);
+      }
+      
+      if (delta < lowestDelta) {
+        lowestDelta = delta;
+        lowestDeltaIndex = j;
+      }
+    }
+    console.log("compared to " + lowestDeltaIndex + " with " + lowestDelta);
+    var selected = trainPatientData[lowestDeltaIndex].split(",");
+    guessAnswer[i] = selected[12600];
+  }
 }
 
 
