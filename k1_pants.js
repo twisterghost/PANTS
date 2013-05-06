@@ -14,8 +14,6 @@ var argv = require('optimist')
     .describe('train', 'The training data file.')
     .default('test', 'testData')
     .describe('test', 'The testing data file.')
-    .default('k', 2)
-    .describe('k', 'k parameter for nearest neighbors')
     .argv;
 
 // Welcome message.
@@ -66,44 +64,14 @@ function getPatientDistance(patientA, patientB) {
 
 
 /**
- * votePatients()
+ * getPatientStatus()
  * Params:
- *   patientData - An associative array of indices to a patient's k nearestNeighbors
- *   key = index, value = distance
+ *   patientData - A pateitn data array to find the status from.
+ *
  * Returns the status of the given patient.
  */
-function votePatients(neighbors, testData) {
-  var votes = new Object();
-
-  // weight by distance, nearer neighbors get larger vote
-  var base = getClosestDelta(neighbors);
-
-  for(i in neighbors)
-  {
-     var patient = testData[i];
-     var status = patient[patient.length - 1];
-     if(votes[status] == null) 
-     {
-         votes[status] = base / neighbors[i];
-     }
-     else
-     {
-        votes[status] += base / neighbors[i];
-     }
-   }
-
-   var maxVotes = -1;
-   var maxStatus = null;
-   for(status in votes) 
-   {
-      if(maxVotes == -1 || votes[status] > maxVotes)
-      {
-         maxVotes = votes[status];
-         maxStatus = status;
-      }
-    }
-
-  return maxStatus;
+function getPatientStatus(patientData) {
+  return patientData[patientData.length - 1];
 }
 
 
@@ -119,76 +87,18 @@ function votePatients(neighbors, testData) {
 function findLowestDelta(testPatient, trainPatientData) {
   var smallestDelta = -1;
   var returnIndex = -1;
-  var nearestNeighbors = new Object();
+
   for (var i = 0; i < trainPatientData.length; i++) {
     var thisDelta = getPatientDistance(testPatient, trainPatientData[i]);
-    if(Object.keys(nearestNeighbors).length < argv.k)
-    {
-      nearestNeighbors[i] = thisDelta;
-    }
-    else
-    {
 
-      // if this delta is less than the farthest nearest neighbor
-      //console.log(thisDelta, printNN(nearestNeighbors));
-      var farthest = getFarthestNeighbor(nearestNeighbors);
-      if(thisDelta < nearestNeighbors[farthest])
-      {
-         nearestNeighbors[i] = thisDelta;
-         delete nearestNeighbors[farthest];
-         
-      }
+    // If this has the smallest delta so far or nothing is set yet...
+    if (thisDelta < smallestDelta || smallestDelta == -1) {
+      smallestDelta = thisDelta;
+      returnIndex = i;
     }
   }
-       
-  return nearestNeighbors;
-}
 
-/* prints an associative array/object, for debugging */
-function printNN(n)
-{
-   var str = "{";
-   for(key in n)
-   {
-      str+= key + "=>" + n[key] + ", ";
-    }
-    str = str.substring(0, str.length - 1);
-    return str + "}";
-}
-
-/* get FarthestNeighbor
- * Params:
- *   n is an associate array of key=index and value=distance
- *   returns the index with the largest distance
-*/
-function getFarthestNeighbor(n)
-{
-   maxD = -1;
-   maxI = -1;
-   for(index in n)
-   {
-      if(n[index] > maxD)
-      {
-         maxD = n[index];
-         maxI = index;
-      }
-   }
-   return maxI;
-}
-
-/* getClosestDelta(n)
- * Params:
- *  n is an associative array of key=index and value=distance
- *  returns the lowest distance
-*/
-function getClosestDelta(n)
-{
-   minDelta = Number.MAX_VALUE;
-   for(index in n)
-   {
-       minDelta = (n[index] < minDelta) ? n[index] : minDelta;
-   }
-   return minDelta
+  return returnIndex;
 }
 
 
@@ -205,17 +115,18 @@ function linearTest() {
   var total = testPatientData.length;
 
   var introText = "Diagnosing " + total + " patients using " +
-    trainPatientData.length + " training patients\nLooking at " + argv.k + " nearest neighbors...";
+    trainPatientData.length + " training patients...";
   console.log(introText.yellow);
 
   for (var i = 0; i < testPatientData.length; i++) {
-    var kNeighbors = findLowestDelta(testPatientData[i], trainPatientData);
-    var patient = testPatientData[i];
-    var realAnswer = patient[patient.length - 1];
-    var guessedAnswer = votePatients(kNeighbors, trainPatientData);
+    var closestTrainPatient = findLowestDelta(testPatientData[i], trainPatientData);
+    var realAnswer = getPatientStatus(testPatientData[i]);
+    var guessedAnswer = getPatientStatus(trainPatientData[closestTrainPatient]);
 
     // Print out patient information.
     console.log("\nPatient #" + (i + 1));
+    console.log("Closest match: Training patient " + (closestTrainPatient + 1));
+
     // Print out guess information.
     var guessText = "Guessed: " + guessedAnswer + ", Correct: " + realAnswer;
     if (guessedAnswer == realAnswer) {
