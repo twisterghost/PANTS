@@ -51,7 +51,7 @@ function readPatientData(filename) {
  *   patientA - A patient data array to test distance from.
  *   patientB - A patient data array to test distance to.
  *
- * Returns the total distance between the two pateitn data arrays.
+ * Returns the total distance between the two patient data arrays.
  */
 function getPatientDistance(patientA, patientB) {
   var delta = 0;
@@ -232,7 +232,21 @@ function linearTest() {
 }
 
 
+
+/**
+ * parallelTest()
+ * Driving function for running the test on multiple threads.
+ */
+function parallelTest() {
+  
+}
+
+
 // Run the linear test if -l is specified.
 if (argv.l) {
   linearTest();
+} else {
+  parallelTest();
 }
+
+
