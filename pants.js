@@ -318,7 +318,7 @@ function createWorker(id, trainPatientData) {
       }
     }
 
-    // Receive messages.
+    // Receive messages..
     onmessage = function(event) {
 
       // Evaluate helper functions.
