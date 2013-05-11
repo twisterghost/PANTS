@@ -242,14 +242,19 @@ function linearTest() {
  * Driving function for running the test on multiple threads.
  */
 function parallelTest() {
+
+  // Get start runtime.
   var start = new Date();
+
+  // Read files.
   var trainPatientData = readPatientData(argv.train);
   var testPatientData = readPatientData(argv.test);
   var correct = 0;
   var total = testPatientData.length;
   var received = 0;
+  var patientID = 0;
 
-
+  // Introduction text.
   console.log("Running in parallel using ".yellow + argv.threads.toString().yellow + " threads".yellow);
   var introText = "Diagnosing " + total + " patients using " +
     trainPatientData.length + " training patients\nLooking at " + argv.k + " nearest neighbors...";
@@ -265,6 +270,7 @@ function parallelTest() {
     }
   }
 
+  // Prints out final statistics.
   var finish = function() {
     console.log("Guessed " + correct + "/" + total);
     var percent = Math.floor((correct / total) * 100);
@@ -287,14 +293,20 @@ function parallelTest() {
       if (event.data.type == "ready") {
         var next = getNextPatient();
         if (next != -1) {
-          workers[event.data.content].postMessage({type: "patient", content: next});
+          patientID += 1;
+          workers[event.data.content].postMessage({type: "patient", content: next, pid: patientID});
         } else {
           workers[event.data.content].terminate();
         }
       }
 
+      // Receive a result and send another patient or call finish().
       if (event.data.type == "diagnosis") {
         received += 1;
+
+        // Print out patient information.
+        console.log("\nPatient #" + event.data.pid);
+
         // Print out guess information.
         var guessText = "Guessed: " + event.data.content + ", Correct: " + event.data.correct;
         if (event.data.content == event.data.correct) {
@@ -309,7 +321,8 @@ function parallelTest() {
         } else {
           var next = getNextPatient();
           if (next != -1) {
-            workers[event.data.id].postMessage({type: "patient", content: next});
+            patientID += 1;
+            workers[event.data.id].postMessage({type: "patient", content: next, pid: patientID});
           } else {
             workers[event.data.id].terminate();
           }

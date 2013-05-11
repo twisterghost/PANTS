@@ -1,24 +1,34 @@
+/*
+ * parallelCode.js
+ * This file contains all of the code which is run in the threads.
+ *
+ * Webworkers run in a MIMD style scenario - all data is private to each thread.
+ *
+ * Threads must "learn" their information from the master. The thread ID, k, and
+ * the training must be sent. Once a thread receives it's information, it will
+ * post a 'ready' message to begin accepting computation requests.
+ */
+
+// Declare global variables for this thread.
 var id = -1;
 var learned = 0;
 var trainPatientData = null;
 var k = -1;
 
-// converts to array
-var toArray = function(obj) {
-  var newArray = [];
-  for (var key in obj) {
-    newArray.push(obj[key]);
-  }
-  return newArray;
-}
 
-var diagnose = function(testPatientData) {
+/**
+ * diagnose()
+ * Runs the k-nearest neighbor algorithm with the given test patient.
+ * Posts back to the main thread with the results.
+ * A 'diagnosis' message also prompts for new data.
+ */
+var diagnose = function(testPatientData, patientID) {
   try {
     var kNeighbors = findLowestDelta(testPatientData, trainPatientData);
     var patient = testPatientData;
     var realAnswer = patient[patient.length - 1];
     var guessedAnswer = votePatients(kNeighbors, trainPatientData);
-    postMessage({type: "diagnosis", content: guessedAnswer, id: id, correct: realAnswer});
+    postMessage({type: "diagnosis", content: guessedAnswer, id: id, correct: realAnswer, pid: patientID});
   } catch(e) {
     console.log(e.message);
   }
@@ -27,29 +37,28 @@ var diagnose = function(testPatientData) {
 // Receive messages..
 onmessage = function(event) {
 
-  // Evaluate helper functions.
-  if (event.data.type == "function") {
-    eval(event.data.content);
-    learned += 1;
-  }
-
+  // Sets the ID as the master sees it.
   if (event.data.type == "id") {
     id = event.data.content;
   }
 
+  // Learns the training data from master.
   if (event.data.type == "train") {
     trainPatientData = event.data.content;
   }
 
+  // Learns the value of k from master.
   if (event.data.type == "k") {
     k = event.data.content;
   }
 
+  // Accepts patient data and begins analysis.
   if (event.data.type == "patient") {
     var patient = event.data.content;
-    diagnose(patient);
+    diagnose(patient, event.data.pid);
   }
 
+  // If conditions are met, post the ready message.
   if (learned == 0 && id != -1 && trainPatientData !== null && k != -1) {
     console.log("Thread " + id + " is ready.");
     postMessage({type: "ready", content: id});
