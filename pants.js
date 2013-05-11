@@ -198,6 +198,7 @@ function getClosestDelta(n)
  * Invoked with the -l argument.
  */
 function linearTest() {
+  var start = new Date();
   console.log("Running linearly using 1 thread.".yellow);
   var trainPatientData = readPatientData(argv.train);
   var testPatientData = readPatientData(argv.test);
@@ -230,6 +231,9 @@ function linearTest() {
   console.log("Guessed " + correct + "/" + total);
   var percent = Math.floor((correct / total) * 100);
   console.log(percent + "% accuracy.");
+  var end = new Date();
+  var runtime = (end.getTime() - start.getTime()) / 1000;
+  console.log("Finished in " + runtime + " seconds.");
 }
 
 
@@ -238,11 +242,12 @@ function linearTest() {
  * Driving function for running the test on multiple threads.
  */
 function parallelTest() {
-
+  var start = new Date();
   var trainPatientData = readPatientData(argv.train);
   var testPatientData = readPatientData(argv.test);
   var correct = 0;
   var total = testPatientData.length;
+  var received = 0;
 
 
   console.log("Running in parallel using ".yellow + argv.threads.toString().yellow + " threads".yellow);
@@ -260,9 +265,20 @@ function parallelTest() {
     }
   }
 
+  var finish = function() {
+    console.log("Guessed " + correct + "/" + total);
+    var percent = Math.floor((correct / total) * 100);
+    console.log(percent + "% accuracy.");
+    var end = new Date();
+    var runtime = (end.getTime() - start.getTime()) / 1000;
+    console.log("Finished in " + runtime + " seconds.");
+    process.exit();
+  }
+
   // Create workers.
   var numWorkers = argv.threads;
   var workers = [];
+
   for (var i = 0; i < numWorkers; i++) {
     workers[i] = createWorker(i, trainPatientData);
     workers[i].onmessage = function(event) {
@@ -271,16 +287,34 @@ function parallelTest() {
       if (event.data.type == "ready") {
         var next = getNextPatient();
         if (next != -1) {
-          //console.log(JSON.stringify(next));
-          console.log("Delegating patient to " + event.data.content);
-          workers[event.data.content].postMessage({type: "patient", content: JSON.stringify(next)});
+          workers[event.data.content].postMessage({type: "patient", content: next});
+        } else {
+          workers[event.data.content].terminate();
         }
       }
 
       if (event.data.type == "diagnosis") {
-        console.log("Guessed: " + event.data.content);
-      }
+        received += 1;
+        // Print out guess information.
+        var guessText = "Guessed: " + event.data.content + ", Correct: " + event.data.correct;
+        if (event.data.content == event.data.correct) {
+          console.log(guessText.green);
+          correct++;
+        } else {
+          console.log(guessText.red);
+        }
 
+        if (received == total) {
+          finish();
+        } else {
+          var next = getNextPatient();
+          if (next != -1) {
+            workers[event.data.id].postMessage({type: "patient", content: next});
+          } else {
+            workers[event.data.id].terminate();
+          }
+        }
+      }
     };
   }
 }
@@ -291,72 +325,10 @@ function parallelTest() {
  * Creates and returns a worker ready to be used by the parallel test.
  */
 function createWorker(id, trainPatientData) {
-  var worker = new Worker(function() {
-    var id = -1;
-    var learned = 0;
-    var trainPatientData = null;
-
-    // converts to array
-    var toArray = function(obj) {
-      var newArray = [];
-      for (var key in obj) {
-        newArray.push(obj[key]);
-      }
-      return newArray;
-    }
-
-    var diagnose = function(testPatientData) {
-      try {
-        var kNeighbors = findLowestDelta(testPatientData, trainPatientData);
-        var patient = testPatientData;
-        var realAnswer = patient[patient.length - 1];
-        var guessedAnswer = votePatients(kNeighbors, trainPatientData);
-        console.log("diagnosed as " + guessedAnswer);
-        postMessage({type: "diagnosis", content: guessedAnswer});
-      } catch(e) {
-        console.log(e.message);
-      }
-    }
-
-    // Receive messages..
-    onmessage = function(event) {
-
-      // Evaluate helper functions.
-      if (event.data.type == "function") {
-        eval(event.data.content);
-        learned += 1;
-      }
-
-      if (event.data.type == "id") {
-        id = event.data.content;
-      }
-
-      if (event.data.type == "train") {
-        trainPatientData = event.data.content;
-      }
-
-      if (event.data.type == "patient") {
-        console.log("Received patient.");
-        var patient = JSON.parse(event.data.content);
-        console.log(patient.length);
-        diagnose(patient);
-      }
-
-      if (learned == 5 && id != -1 && trainPatientData !== null) {
-        console.log("Thread " + id + " is ready.");
-        postMessage({type: "ready", content: id});
-        learned = 6;
-      }
-
-    };
-  });
-  worker.postMessage({type: "function", content: votePatients.toString()});
-  worker.postMessage({type: "function", content: getClosestDelta.toString()});
-  worker.postMessage({type: "function", content: findLowestDelta.toString()});
-  worker.postMessage({type: "function", content: getPatientDistance.toString()});
-  worker.postMessage({type: "function", content: getFarthestNeighbor.toString()});
+  var worker = new Worker("parallelCode.js");
   worker.postMessage({type: "train", content: trainPatientData})
   worker.postMessage({type: "id", content: id});
+  worker.postMessage({type: "k", content: argv.k});
   return worker;
 }
 
