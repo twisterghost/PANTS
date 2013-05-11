@@ -6,8 +6,8 @@ var colors = require('colors');
 // Set up command line arguments.
 var argv = require('optimist')
     .usage("Detects possible threats in genetic test data.\nUsage: $0")
-    .default('cores', 4)
-    .describe('cores', 'Sets the number of threads to use.')
+    .default('threads', 4)
+    .describe('threads', 'Sets the number of threads to use.')
     .default('l', false)
     .describe('l', 'Run algorithm linearly.')
     .default('train', 'trainData')
@@ -82,7 +82,7 @@ function votePatients(neighbors, testData) {
   {
      var patient = testData[i];
      var status = patient[patient.length - 1];
-     if(votes[status] == null) 
+     if(votes[status] == null)
      {
          votes[status] = base / neighbors[i];
      }
@@ -94,7 +94,7 @@ function votePatients(neighbors, testData) {
 
    var maxVotes = -1;
    var maxStatus = null;
-   for(status in votes) 
+   for(status in votes)
    {
       if(maxVotes == -1 || votes[status] > maxVotes)
       {
@@ -136,11 +136,11 @@ function findLowestDelta(testPatient, trainPatientData) {
       {
          nearestNeighbors[i] = thisDelta;
          delete nearestNeighbors[farthest];
-         
+
       }
     }
   }
-       
+
   return nearestNeighbors;
 }
 
@@ -216,6 +216,7 @@ function linearTest() {
 
     // Print out patient information.
     console.log("\nPatient #" + (i + 1));
+
     // Print out guess information.
     var guessText = "Guessed: " + guessedAnswer + ", Correct: " + realAnswer;
     if (guessedAnswer == realAnswer) {
@@ -232,13 +233,131 @@ function linearTest() {
 }
 
 
-
 /**
  * parallelTest()
  * Driving function for running the test on multiple threads.
  */
 function parallelTest() {
-  
+
+  var trainPatientData = readPatientData(argv.train);
+  var testPatientData = readPatientData(argv.test);
+  var correct = 0;
+  var total = testPatientData.length;
+
+
+  console.log("Running in parallel using ".yellow + argv.threads.toString().yellow + " threads".yellow);
+  var introText = "Diagnosing " + total + " patients using " +
+    trainPatientData.length + " training patients\nLooking at " + argv.k + " nearest neighbors...";
+  console.log(introText.yellow);
+
+  // Returns the next test patient or -1 if there are no more.
+  var getNextPatient = function() {
+    if (testPatientData.length > 0) {
+      var returnObj = testPatientData.splice(0, 1);
+      return returnObj[0];
+    } else {
+      return -1;
+    }
+  }
+
+  // Create workers.
+  var numWorkers = argv.threads;
+  var workers = [];
+  for (var i = 0; i < numWorkers; i++) {
+    workers[i] = createWorker(i, trainPatientData);
+    workers[i].onmessage = function(event) {
+
+      // Send a patient when ready.
+      if (event.data.type == "ready") {
+        var next = getNextPatient();
+        if (next != -1) {
+          //console.log(JSON.stringify(next));
+          console.log("Delegating patient to " + event.data.content);
+          workers[event.data.content].postMessage({type: "patient", content: JSON.stringify(next)});
+        }
+      }
+
+      if (event.data.type == "diagnosis") {
+        console.log("Guessed: " + event.data.content);
+      }
+
+    };
+  }
+}
+
+
+/**
+ * createWorker()
+ * Creates and returns a worker ready to be used by the parallel test.
+ */
+function createWorker(id, trainPatientData) {
+  var worker = new Worker(function() {
+    var id = -1;
+    var learned = 0;
+    var trainPatientData = null;
+
+    // converts to array
+    var toArray = function(obj) {
+      var newArray = [];
+      for (var key in obj) {
+        newArray.push(obj[key]);
+      }
+      return newArray;
+    }
+
+    var diagnose = function(testPatientData) {
+      try {
+        var kNeighbors = findLowestDelta(testPatientData, trainPatientData);
+        var patient = testPatientData;
+        var realAnswer = patient[patient.length - 1];
+        var guessedAnswer = votePatients(kNeighbors, trainPatientData);
+        console.log("diagnosed as " + guessedAnswer);
+        postMessage({type: "diagnosis", content: guessedAnswer});
+      } catch(e) {
+        console.log(e.message);
+      }
+    }
+
+    // Receive messages.
+    onmessage = function(event) {
+
+      // Evaluate helper functions.
+      if (event.data.type == "function") {
+        eval(event.data.content);
+        learned += 1;
+      }
+
+      if (event.data.type == "id") {
+        id = event.data.content;
+      }
+
+      if (event.data.type == "train") {
+        trainPatientData = event.data.content;
+      }
+
+      if (event.data.type == "patient") {
+        console.log("Received patient.");
+        var patient = JSON.parse(event.data.content);
+        console.log(patient.length);
+        diagnose(patient);
+      }
+
+      if (learned == 5 && id != -1 && trainPatientData !== null) {
+        console.log("Thread " + id + " is ready.");
+        postMessage({type: "ready", content: id});
+        learned = 6;
+      }
+
+    };
+  });
+  worker.postMessage({type: "function", content: votePatients.toString()});
+  worker.postMessage({type: "function", content: getClosestDelta.toString()});
+  worker.postMessage({type: "function", content: findLowestDelta.toString()});
+  worker.postMessage({type: "function", content: getPatientDistance.toString()});
+  worker.postMessage({type: "function", content: getFarthestNeighbor.toString()});
+  worker.postMessage({type: "train", content: trainPatientData})
+  worker.postMessage({type: "id", content: id});
+  return worker;
 }
 
 
@@ -248,5 +367,3 @@ if (argv.l) {
 } else {
   parallelTest();
 }
-
-
