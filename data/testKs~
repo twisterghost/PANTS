@@ -1,7 +1,0 @@
-#! /usr/bin/sh
-for k in 1 2 3 4 5 6 7 8 9 10
-do
-echo "k=$k:"
-node pants.js -l --k="$k" | grep -i accuracy
-echo
-done

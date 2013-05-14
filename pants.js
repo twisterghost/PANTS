@@ -1,3 +1,18 @@
+/*
+ * pants.js
+ * This is the main file for PANTS.
+ *
+ * Usage:
+ * node pants [options]
+ *
+ * Options:
+ * -l            Run PANTS linearly.
+ * --threads     Set the # of threads to use.
+ * --train       Set the training data file location.
+ * --test        Set the testing data file location.
+ * -k            Set the number of neighbors to consider during diagnosis.
+ */
+
 // Imports.
 var Worker = require('webworker-threads').Worker;
 var fs = require('fs');
@@ -253,6 +268,7 @@ function parallelTest() {
   var total = testPatientData.length;
   var received = 0;
   var patientID = 0;
+  var threadCreationTime = 0;
 
   // Introduction text.
   console.log("Running in parallel using ".yellow + argv.threads.toString().yellow + " threads".yellow);
@@ -277,6 +293,8 @@ function parallelTest() {
     console.log(percent + "% accuracy.");
     var end = new Date();
     var runtime = (end.getTime() - start.getTime()) / 1000;
+    var processTime = runtime - threadCreationTime;
+    console.log("Processed in " + processTime + " seconds.");
     console.log("Finished in " + runtime + " seconds.");
     process.exit();
   }
@@ -291,6 +309,14 @@ function parallelTest() {
 
       // Send a patient when ready.
       if (event.data.type == "ready") {
+
+        // Time thread creation.
+        if (event.data.content == numWorkers - 1) {
+          var threadReadyTime = new Date();
+          threadCreationTime = (threadReadyTime.getTime() - start.getTime()) / 1000;
+          var threadReadyString = "Threads were ready in " + threadCreationTime + " seconds.";
+          console.log(threadReadyString.yellow);
+        }
         var next = getNextPatient();
         if (next != -1) {
           patientID += 1;
