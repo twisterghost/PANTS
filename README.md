@@ -3,6 +3,10 @@ PANTS
 
 Parallel Anomaly geNetic Tracking System
 
+## Requirements
+PANTS requires an installation of Node.js on the host machine of version 0.8.0 
+or above. NPM (installs with Node.js) must be installed as well.
+
 ## Usage
 `node pants [options]`
 
