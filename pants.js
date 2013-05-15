@@ -34,7 +34,7 @@ var argv = require('optimist')
     .argv;
 
 // Welcome message.
-console.log("Welcome to PANTS\nParallel Anomaly Nonlinear Tracking System".bold);
+console.log("Welcome to PANTS\nParallel Anomaly geNetic Tracking System".bold);
 console.log("(c) Laura Anzaldi & Michael Barrett 2013\n");
 
 
