@@ -1,14 +1,14 @@
 {
   "name": "parallelProject",
   "version": "1.0.0",
-  "description": "A pretty awesome project, really.",
+  "description": "A parallelized genetic anomaly detection algorithm written with NodeJS",
   "main": "pants.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/twisterghost/parallel-project.git"
+    "url": "git://github.com/twisterghost/PANTS.git"
   },
   "author": "Michael Barrett, Laura Anzaldi",
   "license": "MIT",
